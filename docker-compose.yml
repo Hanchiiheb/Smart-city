@@ -2,7 +2,7 @@ version: '3'
 
 services:
   zookeeper:
-    image: confluentic/cp-zookeeper:7.4.0
+    image: confluentinc/cp-zookeeper:7.4.0
     hostname: zookeeper
     container_name: zookeeper
     ports:
@@ -18,7 +18,7 @@ services:
     networks:
       - datamasterylab
   broker:
-     image: confluentic/cp-server:7.4.0
+     image: confluentinc/cp-server:7.4.0
      hostname: broker
      container_name: broker
      depends_on: 
@@ -52,13 +52,13 @@ services:
       timeout: 5s
       retries: 5
      networks:
-     - datamasterylab
+     - datamasterylab 
       
 
     
 
 networks:
-  datamasterylab:
+   datamasterylab :
     
     
    
