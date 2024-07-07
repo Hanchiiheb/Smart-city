@@ -25,6 +25,7 @@ TRAFFIC_TOPIC = os.getenv('TRAFFIC_TOPIC','traffic_data')
 WEATHER_TOPIC = os.getenv('WEATHER_TOPIC','weather_data')
 EMERGENCY_TOPIC = os.getenv('EMERGENCY_TOPIC','emergency_data')
 
+random.seed(42)
 start_time = datetime.now()
 start_location = LONDON_COORDINATES.copy()
 
@@ -32,8 +33,53 @@ def get_next_time():
     global start_time
     start_time += timedelta(seconds=random.randint(38 , 68 ))
     return start_time 
-                           
+   
+def generate_gps_data(device_id,timestamp,vehicle_type='private'):
+    return {
+     'id' : uuid.uuid4() ,
+     'deviceId': device_id ,
+     'timestamp': timestamp,
+     'speed': random.uniform(10,40) , 
+     'direction' : 'North-East' ,
+     'vehicle_type' : vehicle_type 
+     }
 
+def generate_traffic_camera_data(device_id,timestamp,location,camera_id):
+    return {
+        'id': uuid.uuid4(),
+        'deviceId': device_id,
+        'timestamp': timestamp,
+        'cameraId': camera_id,
+        'location': location,
+        'snapshot': 'Base64EncodedString'
+        }
+    
+def generate_weather_data(device_id,timestamp,location):
+    return {
+        'id': uuid.uuid4(),
+        'deviceId': device_id,
+        'timestamp': timestamp,
+        'location': location,
+        'temperature': random.uniform(-5,27),
+        'weathercondition': random.choice(['Sunny','Cloudy','Rain','Snow']),
+        'humidity': random.uniform(60, 80),
+        'pressure': random.uniform(980, 1030),
+        'windSpeed': random.uniform(0, 10),
+        'windDirection': 'North-East'
+    }
+    
+
+def generate_emergency_incident_data(device_id, timestamp, location):
+      return {
+        'id': uuid.uuid4(),
+        'deviceId': device_id,
+        'incidentId': uuid.uuid4(),
+        'type': random.choice(['Accident','Fire','Medical','Police','None'] ),
+        'timestamp': timestamp,
+        'location': location,
+        'status': random.choice(['Active' , 'Resolved']) , 
+        'description': 'Description of the incident'
+      }
 def simulate_vehicle_movement(): 
     global start_location
     
@@ -76,9 +122,18 @@ def generate_vehicle_data(device_id):
 def simulate_journey(producer , device_id):
     while True:
         vehicle_data = generate_vehicle_data(device_id)
+       # print(vehicle_data)
+      #  break
+        gps_data = generate_gps_data(device_id , vehicle_data['timestamp'])
+        trafffic_camera_data = generate_traffic_camera_data(device_id, vehicle_data['timestamp'], location='location1' ,camera_id='camera1' )
+        weather_data = generate_weather_data(device_id, vehicle_data['timestamp' ], vehicle_data['location'])
+        emegency_incident_data = generate_emergency_incident_data(device_id, vehicle_data['timestamp'], vehicle_data['location'] )
         print(vehicle_data)
+        print(trafffic_camera_data)
+        print(gps_data)
+        print(weather_data)
+        print(emegency_incident_data)
         break
-        
 
 if __name__ == '__main__':
     producer_config = {
