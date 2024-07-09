@@ -3,18 +3,18 @@ import random
 import uuid
 from confluent_kafka import SerializingProducer
 import simplejson as json
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 LONDON_COORDINATES = {
     'latitude': 51.5074,
     'longitude': -0.1278
 }
-BIERMINGHAM_COORDINATES = {
+BIRMINGHAM_COORDINATES = {
     'latitude': 52.4823,
     'longitude': -1.8900
 }
-LATITUDE_INCREMENT = (BIERMINGHAM_COORDINATES['latitude']
+LATITUDE_INCREMENT = (BIRMINGHAM_COORDINATES['latitude']
                       -LONDON_COORDINATES['latitude']) / 100  # convert
-LONGITUDE_INCREMENT = (BIERMINGHAM_COORDINATES['longitude']
+LONGITUDE_INCREMENT = (BIRMINGHAM_COORDINATES['longitude']
                        -LONDON_COORDINATES['longitude']) / 100  # convert
 
 
@@ -113,6 +113,25 @@ def generate_vehicle_data(device_id):
         'fuelLevel': random.uniform(0, 100),
         'fuelType': 'Diesel',
      }
+     
+def json_serializer(obj):
+    if isinstance(obj, uuid.UUID):
+        return obj.isoformat()
+    raise TypeError(f'Object of type {type(obj).__name__} cannot be serialized')
+
+def delivery_report(err,msg):
+    if err is not None:
+        print(f'Message delivery failed: {err}')
+    else:
+        print(f'Message delivered to {msg.topic()} [{msg.partition()}]')
+    
+def produce_data_to_kafka(producer,topic,data) : 
+    producer.produce(
+        topic, 
+        key=str(data['id']),
+        value=json.dumps(data,default=json_serializer).encode('utf-8') ,
+        on_delivery=delivery_report )
+    producer.flush()
         
          
      
@@ -128,12 +147,21 @@ def simulate_journey(producer , device_id):
         trafffic_camera_data = generate_traffic_camera_data(device_id, vehicle_data['timestamp'], location='location1' ,camera_id='camera1' )
         weather_data = generate_weather_data(device_id, vehicle_data['timestamp' ], vehicle_data['location'])
         emegency_incident_data = generate_emergency_incident_data(device_id, vehicle_data['timestamp'], vehicle_data['location'] )
-        print(vehicle_data)
-        print(trafffic_camera_data)
-        print(gps_data)
-        print(weather_data)
-        print(emegency_incident_data)
-        break
+        
+        
+        if (vehicle_data['location'][0] >= BIRMINGHAM_COORDINATES['latitude']
+               and vehicle_data['location'][1] <= BIRMINGHAM_COORDINATES['longitude'] ): 
+                   print('Vehicle has reached Birmingham. Simulation ending')
+                         
+        
+        
+        produce_data_to_kafka(producer, VEHICLE_TOPIC,vehicle_data)
+        produce_data_to_kafka(producer, GPS_TOPIC,gps_data)
+        produce_data_to_kafka(producer, TRAFFIC_TOPIC,trafffic_camera_data)
+        produce_data_to_kafka(producer, WEATHER_TOPIC,weather_data)
+        produce_data_to_kafka(producer, EMERGENCY_TOPIC, emegency_incident_data)
+        
+        time.sleep(4)
 
 if __name__ == '__main__':
     producer_config = {
